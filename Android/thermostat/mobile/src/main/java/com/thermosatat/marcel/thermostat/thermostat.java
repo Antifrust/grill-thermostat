@@ -1,88 +1,122 @@
 package com.thermosatat.marcel.thermostat;
 
-import android.app.ListActivity;
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
-import android.content.Context;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
+import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.os.Handler;
 import android.os.Bundle;
-import android.widget.Toast;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 
-import java.util.UUID;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
-public class thermostat extends ListActivity {
 
-    private BluetoothAdapter mBluetoothAdapter;     // bluetooth adapter object
-    private final static int REQUEST_ENABLE_BT = 1; // define for ENABLE BLUTOOTH
-    private boolean mScanning;                      // flag if scanning was successful
-    private Handler mHandler;                       // handler for ble scanning
-    private LeDeviceListAdapter mLeDeviceListAdapter;
-    private UUID UUID_List[] = {UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E"),
-                                UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E"),
-                                UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E")};
+public class thermostat extends AppCompatActivity {
 
-    // Stops scanning after 10 seconds.
-    private static final long SCAN_PERIOD = 10000;
+    private static final long SCAN_PERIOD = 10000;  // Stops scanning after 10 seconds.
+    private BluetoothAdapter mBluetoothAdapter;     // Bluetooth adapter object
+    private static final String TAG = "Scherer";    // debug tag
+
+    private static final int REQUEST_ENABLE_BT = 1;
+    private static final int REQUEST_FINE_LOCATION = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_thermostat);
 
-        // Use this check to determine whether BLE is supported on the device. Then
-        // you can selectively disable BLE-related features.
+        // create a bluetooth adapter object for work with the bluetooth device
+        BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
+        mBluetoothAdapter = bluetoothManager.getAdapter();
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // check if bluetooth is available on the device
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            Toast.makeText(this, "Bluetooth LE not supported", Toast.LENGTH_SHORT).show();
             finish();
         }
-        else{
-            // Initializes Bluetooth adapter.
-            final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-            mBluetoothAdapter = bluetoothManager.getAdapter();
-
-            // Ensures Bluetooth is available on the device and it is enabled. If not,
-            // displays a dialog requesting user permission to enable Bluetooth.
-            if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
-                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-            }
-        }
     }
 
-    private void scanLeDevice(final boolean enable) {
-        if (enable) {
-            // Stops scanning after a pre-defined scan period.
-            mHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    mScanning = false;
-                    mBluetoothAdapter.stopLeScan(mLeScanCallback);
-                }
-            }, SCAN_PERIOD);
-
-            mScanning = true;
-            mBluetoothAdapter.startLeScan(UUID_List, mLeScanCallback);
-        } else {
-            mScanning = false;
-            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+    // function for start scanning
+    private void startScan() {
+        // if no permission or scanning is active
+        if (!hasPermissions() || mScanning) {
+            return;
         }
+        List<ScanFilter> filters = new ArrayList<>();               // create a filter list for bluetooth Service UUIDs
+        ScanSettings settings = new ScanSettings.Builder()          // create bluetooth scan settings
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+                .build();
+
+        mScanResults = new HashMap<>();
+        mScanCallback = new BtleScanCallback(mScanResults);
+
+        mScanCallback = new BtleScanCallback(mScanResults);
+        mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
+        mBluetoothLeScanner.startScan(filters, settings, mScanCallback);
+        mScanning = true;
     }
 
-    // Device scan callback.
-    private BluetoothAdapter.LeScanCallback mLeScanCallback =
-        new BluetoothAdapter.LeScanCallback() {
-            @Override
-            public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mLeDeviceListAdapter.addDevice(device);
-                        mLeDeviceListAdapter.notifyDataSetChanged();
-                    }
-                });
+    // the bluetooth scan callback
+    private class BtleScanCallback extends ScanCallback {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            addScanResult(result);
+        }
+        @Override
+        public void onBatchScanResults(List<ScanResult> results) {
+            for (ScanResult result : results) {
+                addScanResult(result);
             }
-        };
+        }
+        @Override
+        public void onScanFailed(int errorCode) {
+            Log.e(TAG, "BLE Scan Failed with code " + errorCode);
+        }
+        private void addScanResult(ScanResult result) {
+            BluetoothDevice device = result.getDevice();
+            String deviceAddress = device.getAddress();
+            mScanResults.put(deviceAddress, device);
+        }
+    };
+
+    // check if user has permisson
+    private boolean hasPermissions() {
+        if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
+            requestBluetoothEnable();
+            return false;
+        } else if (!hasLocationPermissions()) {
+            requestLocationPermission();
+            return false;
+        }
+        return true;
+    }
+
+    // request to start bluetooth
+    private void requestBluetoothEnable() {
+        Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+        startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        Log.d(TAG, "Requested user enables Bluetooth. Try starting the scan again.");
+    }
+
+    // check is user has location permission
+    private boolean hasLocationPermissions() {
+        return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    // request for location permission
+    private void requestLocationPermission() {
+        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_FINE_LOCATION);
+    }
 }
