@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.ParcelUuid;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -58,7 +59,12 @@ public class thermostat extends AppCompatActivity {
         button_start.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                startScan();
+                if(mScanning == true){
+                    stopScan();
+                }
+                else {
+                    startScan();
+                }
             }
         });
     }
@@ -78,17 +84,22 @@ public class thermostat extends AppCompatActivity {
         if (!hasPermissions() || mScanning) {
             return;
         }
-        List<ScanFilter> filters = new ArrayList<>();               // create a filter list for bluetooth Service UUIDs
-        ScanSettings settings = new ScanSettings.Builder()          // create bluetooth scan settings
-                .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
-                .build();
+
+        button_start.setText("Stop Scan");
 
         mScanResults = new HashMap<>();
-        mScanCallback = new BtleScanCallback(mScanResults);
+        //mScanCallback = mBluetoothAdapter. (mScanResults);
 
-        mScanCallback = new BtleScanCallback(mScanResults);
-        mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
-        mBluetoothLeScanner.startScan(filters, settings, mScanCallback);
+//        ScanFilter scanFilter = new ScanFilter.Builder()
+//                .setServiceUuid(new ParcelUuid(SERVICE_UUID))
+//                .build();
+//        List<ScanFilter> filters = new ArrayList<>();               // create a filter list for bluetooth Service UUIDs
+//        ScanSettings settings = new ScanSettings.Builder()          // create bluetooth scan settings
+//                .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+//                .build();
+
+//        mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
+//        mBluetoothLeScanner.startScan(filters, settings, mScanCallback);
 
         mHandler = new Handler();
         mHandler.postDelayed(new Runnable() {
@@ -99,15 +110,17 @@ public class thermostat extends AppCompatActivity {
         }, SCAN_PERIOD);
 
         mScanning = true;
+        Log.d(TAG, "start scanning ...");
     }
 
     /* function to stop BLE device scann */
     private void stopScan() {
+        button_start.setText("Start Scan");
         if (mScanning && mBluetoothAdapter != null && mBluetoothAdapter.isEnabled() && mBluetoothLeScanner != null) {
             mBluetoothLeScanner.stopScan(mScanCallback);
             scanComplete();
         }
-
+        Log.d(TAG, "stop scanning ...");
         mScanCallback = null;
         mScanning = false;
         mHandler = null;
@@ -116,6 +129,7 @@ public class thermostat extends AppCompatActivity {
     /* function where list all find BLE devices in logfile */
     private void scanComplete() {
         if (mScanResults.isEmpty()) {
+            Log.d(TAG, "list empty ...");
             return;
         }
         for (String deviceAddress : mScanResults.keySet()) {
