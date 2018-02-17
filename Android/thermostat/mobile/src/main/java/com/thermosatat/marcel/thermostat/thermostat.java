@@ -36,10 +36,10 @@ public class thermostat extends AppCompatActivity {
     private static final String TAG = "Scherer";        // debug tag
     private boolean mScanning = false;                  // flag is scanning is active
     private Map<String, BluetoothDevice> mScanResults;  // map of found bluetooth device
-    private ScanCallback mScanCallback;                 // the scan callback function object
     private BluetoothLeScanner mBluetoothLeScanner;     // bluetooth low energy scanner object
     private Handler mHandler;                           // handler for stop scanning after time delay
     private Button button_start;                        // button object to start scan
+    private ScanCallback mScanCallback;
 
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int REQUEST_FINE_LOCATION = 2;
@@ -88,18 +88,18 @@ public class thermostat extends AppCompatActivity {
         button_start.setText("Stop Scan");
 
         mScanResults = new HashMap<>();
-        //mScanCallback = mBluetoothAdapter. (mScanResults);
+        mScanCallback = new BtleScanCallback();
+        mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
 
 //        ScanFilter scanFilter = new ScanFilter.Builder()
 //                .setServiceUuid(new ParcelUuid(SERVICE_UUID))
 //                .build();
-//        List<ScanFilter> filters = new ArrayList<>();               // create a filter list for bluetooth Service UUIDs
-//        ScanSettings settings = new ScanSettings.Builder()          // create bluetooth scan settings
-//                .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
-//                .build();
+        List<ScanFilter> filters = new ArrayList<>();               // create a filter list for bluetooth Service UUIDs
+        ScanSettings settings = new ScanSettings.Builder()          // create bluetooth scan settings
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+                .build();
 
-//        mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
-//        mBluetoothLeScanner.startScan(filters, settings, mScanCallback);
+        mBluetoothLeScanner.startScan(filters, settings, mScanCallback);
 
         mHandler = new Handler();
         mHandler.postDelayed(new Runnable() {
@@ -121,7 +121,6 @@ public class thermostat extends AppCompatActivity {
             scanComplete();
         }
         Log.d(TAG, "stop scanning ...");
-        mScanCallback = null;
         mScanning = false;
         mHandler = null;
     }
