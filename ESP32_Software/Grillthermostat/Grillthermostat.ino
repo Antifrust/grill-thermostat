@@ -121,7 +121,7 @@ void loop() {
   }
   else
   {
-    Serial.println(" no device connected! ");
+    //Serial.println(" no device connected! ");
   }
   delay(1000);
 }
