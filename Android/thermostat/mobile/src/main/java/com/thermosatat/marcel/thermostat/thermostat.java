@@ -13,6 +13,7 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelUuid;
@@ -77,13 +78,12 @@ public class thermostat extends AppCompatActivity {
         button_start.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
+                Log.d(TAG,"statusflags: " + Boolean.toString(mScanning) + " - " + Boolean.toString(mConnected));
                 if(mScanning == true){
-                    if(mConnected == true){
-                        disconnectGattServer();
-                    }
-                    else{
-                        stopScan();
-                    }
+                    stopScan();
+                }
+                else if(mConnected == true){
+                    disconnectGattServer();
                 }
                 else {
                     startScan();
@@ -155,12 +155,11 @@ public class thermostat extends AppCompatActivity {
             Log.d(TAG, "list empty ...");
             return;
         }
+        Log.d(TAG, "call scanComplete");
         for (String deviceAddress : mScanResults.keySet()) {
-            Log.d(TAG, "Found device: " + deviceAddress + " (" + BLUETOOTH_MAC + ")");
-
             if (deviceAddress.equals(BLUETOOTH_MAC)){
-                Log.d(TAG,"Found right device");
                 BluetoothDevice device = mScanResults.get(deviceAddress);
+                Log.d(TAG, "device for conection: " + deviceAddress);
                 connectDevice(device);
             }
         }
@@ -211,6 +210,7 @@ public class thermostat extends AppCompatActivity {
             mGatt.disconnect();
             mGatt.close();
         }
+        button_start.setText("start scan");
     }
 
     // check if user has permisson
@@ -260,7 +260,7 @@ public class thermostat extends AppCompatActivity {
             }
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                logError("Connected to device " + gatt.getDevice().getAddress());
+                Log.d(TAG,"Connected to device " + gatt.getDevice().getAddress());
                 setConnected(true);
                 gatt.discoverServices();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
