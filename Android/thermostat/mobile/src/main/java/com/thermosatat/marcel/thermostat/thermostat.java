@@ -4,6 +4,8 @@ import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -78,7 +80,6 @@ public class thermostat extends AppCompatActivity {
         button_start.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                Log.d(TAG,"statusflags: " + Boolean.toString(mScanning) + " - " + Boolean.toString(mConnected));
                 if(mScanning == true){
                     stopScan();
                 }
@@ -266,6 +267,22 @@ public class thermostat extends AppCompatActivity {
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 logError("Disconnected from device");
                 disconnectGattServer();
+            }
+        }
+
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            super.onServicesDiscovered(gatt, status);
+
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                Log.d(TAG, "Device service discovery unsuccessful, status " + status);
+                return;
+            }
+
+            List<BluetoothGattCharacteristic> matchingCharacteristics = BluetoothUtils.findCharacteristics(gatt);
+            if (matchingCharacteristics.isEmpty()) {
+                logError("Unable to find characteristics.");
+                return;
             }
         }
     }
