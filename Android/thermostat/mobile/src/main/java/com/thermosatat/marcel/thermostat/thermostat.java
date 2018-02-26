@@ -15,17 +15,17 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelUuid;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 
 import android.bluetooth.BluetoothGattCallback;
+import android.widget.TextView;
+
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,9 +56,11 @@ public class thermostat extends AppCompatActivity {
     private BluetoothLeScanner mBluetoothLeScanner;     // bluetooth low energy scanner object
     private Handler mHandler;                           // handler for stop scanning after time delay
     private Button button_start;                        // button object to start scan
+    private TextView response_text;                     // textview object to print receive msg
     private ScanCallback mScanCallback;
     private boolean mConnected;                         // flag if device connected
     private BluetoothGatt mGatt;
+    private boolean mEchoInitialized;
 
 
 
@@ -71,6 +73,7 @@ public class thermostat extends AppCompatActivity {
         setContentView(R.layout.activity_thermostat);
 
         button_start = (Button)findViewById(R.id.button_start);
+        response_text = (TextView)findViewById(R.id.response_text);
 
         // create a bluetooth adapter object for work with the bluetooth device
         BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
@@ -207,6 +210,7 @@ public class thermostat extends AppCompatActivity {
     public void disconnectGattServer() {
         Log.d(TAG,"Closing Gatt connection");
         mConnected = false;
+        mEchoInitialized = false;
         if (mGatt != null) {
             mGatt.disconnect();
             mGatt.close();
@@ -284,6 +288,48 @@ public class thermostat extends AppCompatActivity {
                 logError("Unable to find characteristics.");
                 return;
             }
+
+            Log.d(TAG,"Initializing: setting write type and enabling notification");
+            for (BluetoothGattCharacteristic characteristic : matchingCharacteristics) {
+                enableCharacteristicNotification(gatt, characteristic);
+            }
         }
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            super.onCharacteristicChanged(gatt, characteristic);
+            Log.d(TAG,"Characteristic changed, " + characteristic.getUuid().toString());
+            String receive_msg = readCharacteristic(characteristic);
+            response_text.setText(receive_msg);
+        }
+    }
+
+    private void enableCharacteristicNotification(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+        boolean characteristicWriteSuccess = gatt.setCharacteristicNotification(characteristic, true);
+        if (characteristicWriteSuccess) {
+            Log.d(TAG,"Characteristic notification set successfully for " + characteristic.getUuid().toString());
+            if (BluetoothUtils.isEchoCharacteristic(characteristic)) {
+                initializeEcho();
+            }
+        } else {
+            logError("Characteristic notification set failure for " + characteristic.getUuid().toString());
+        }
+    }
+
+    private String readCharacteristic(BluetoothGattCharacteristic characteristic) {
+        byte[] messageBytes = characteristic.getValue();
+        Log.d(TAG,"Read: " + StringUtils.byteArrayInHexFormat(messageBytes));
+        String message = StringUtils.stringFromBytes(messageBytes);
+        if (message == null) {
+            logError("Unable to convert bytes to string");
+            return "";
+        }
+        return message;
+    }
+
+
+
+    public void initializeEcho() {
+        mEchoInitialized = true;
     }
 }
