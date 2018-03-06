@@ -111,11 +111,11 @@ void loop() {
     dtostrf(txValue, 1, 2, txString); // float_val, min_width, digits_after_decimal, char_buffer
     
 //    pCharacteristic->setValue(&txValue, 1); // To send the integer value
-//    pCharacteristic->setValue("Hello!"); // Sending a test message
+    pCharacteristic->setValue("Hello!"); // Sending a test message
     pCharacteristic->setValue(txString);
     
     pCharacteristic->notify(); // Send the value to the app!
-    Serial.print("*** Sent Value: ");
+    Serial.print("*** Sent Value of Pin: ");
     Serial.print(txString);
     Serial.println(" ***");
   }

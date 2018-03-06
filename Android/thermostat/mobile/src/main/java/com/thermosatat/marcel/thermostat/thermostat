@@ -5,7 +5,6 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -34,8 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.thermosatat.marcel.thermostat.Constants.CHARACTERISTIC_ECHO_UUID;
-import static com.thermosatat.marcel.thermostat.Constants.CHARACTERISTIC_DEVICE_UUID;
 
 
 public class thermostat extends AppCompatActivity {
@@ -44,6 +41,11 @@ public class thermostat extends AppCompatActivity {
     public static String SERVICE_STRING             = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
     public static UUID SERVICE_UUID                 = UUID.fromString(SERVICE_STRING);
 
+//    public static String CHARACTERISTIC_ECHO_STRING = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
+//    public static UUID CHARACTERISTIC_UUID_TX       = UUID.fromString(CHARACTERISTIC_ECHO_STRING);
+
+//    public static String CHARACTERISTIC_TIME_STRING = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E";
+//    public static UUID CHARACTERISTIC_UUID_RX       = UUID.fromString(CHARACTERISTIC_TIME_STRING);
 
     private String BLUETOOTH_MAC = "30:AE:A4:20:2C:9A";
     private static final long SCAN_PERIOD = 10000;      // Stops scanning after 10 seconds.
@@ -249,10 +251,10 @@ public class thermostat extends AppCompatActivity {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             super.onConnectionStateChange(gatt, status, newState);
-            Log.d(TAG, "onConnectionStateChange newState: " + newState);
+            Log.d(TAG,"onConnectionStateChange newState: " + newState);
 
             if (status == BluetoothGatt.GATT_FAILURE) {
-                Log.d(TAG, "Connection Gatt failure status " + status);
+                Log.d(TAG,"Connection Gatt failure status " + status);
                 disconnectGattServer();
                 return;
             } else if (status != BluetoothGatt.GATT_SUCCESS) {
@@ -263,7 +265,7 @@ public class thermostat extends AppCompatActivity {
             }
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                Log.d(TAG, "Connected to device " + gatt.getDevice().getAddress());
+                Log.d(TAG,"Connected to device " + gatt.getDevice().getAddress());
                 setConnected(true);
                 gatt.discoverServices();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
@@ -287,26 +289,44 @@ public class thermostat extends AppCompatActivity {
                 return;
             }
 
+            Log.d(TAG,"Initializing: setting write type and enabling notification");
             for (BluetoothGattCharacteristic characteristic : matchingCharacteristics) {
-                Log.d(TAG, "Initializing: setting write type and enabling notification: " + characteristic.getUuid().toString());
-                gatt.setCharacteristicNotification(characteristic, true);
-                BluetoothGattDescriptor gatt_descriptor = characteristic.getDescriptor(CHARACTERISTIC_DEVICE_UUID);
-                if (gatt_descriptor == null) {
-                    Log.d(TAG,"descriptor is NULL ...");
-                }
-                Log.d(TAG,Integer.toString(characteristic.getProperties()));
-                check_property(characteristic);
-                gatt_descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-                gatt.writeDescriptor(gatt_descriptor);
+                enableCharacteristicNotification(gatt, characteristic);
+            }
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicRead(gatt, characteristic, status);
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.d(TAG,"Characteristic read successfully");
+                readCharacteristic(characteristic);
+            } else {
+                logError("Characteristic read unsuccessful, status: " + status);
+                // Trying to read from the Time Characteristic? It doesnt have the property or permissions
+                // set to allow this. Normally this would be an error and you would want to:
+                // disconnectGattServer();
             }
         }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicChanged(gatt, characteristic);
-            Log.d(TAG,"Characteristic changed, " + characteristic.getUuid().toString());
+            Log.d("Marcel","Characteristic changed, " + characteristic.getUuid().toString());
             String receive_msg = readCharacteristic(characteristic);
             response_text.setText(receive_msg);
+        }
+    }
+
+    private void enableCharacteristicNotification(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+        boolean characteristicWriteSuccess = gatt.setCharacteristicNotification(characteristic, true);
+        if (characteristicWriteSuccess) {
+            Log.d(TAG,"Characteristic notification set successfully for " + characteristic.getUuid().toString());
+            if (BluetoothUtils.isEchoCharacteristic(characteristic)) {
+                initializeEcho();
+            }
+        } else {
+            logError("Characteristic notification set failure for " + characteristic.getUuid().toString());
         }
     }
 
@@ -321,17 +341,9 @@ public class thermostat extends AppCompatActivity {
         return message;
     }
 
+
+
     public void initializeEcho() {
         mEchoInitialized = true;
-    }
-
-    private void check_property(BluetoothGattCharacteristic ble_characteristic){
-        int bitmap = ble_characteristic.getProperties();
-        if((bitmap & BluetoothGattCharacteristic.PROPERTY_BROADCAST) == BluetoothGattCharacteristic.PROPERTY_BROADCAST){Log.d(TAG,"characteristic include: PROPERTY_BROADCAST");}
-        if((bitmap & BluetoothGattCharacteristic.PROPERTY_READ) == BluetoothGattCharacteristic.PROPERTY_READ){Log.d(TAG,"characteristic include: PROPERTY_READ");}
-        if((bitmap & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) == BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE){Log.d(TAG,"characteristic include: PROPERTY_WRITE_NO_RESPONSE");}
-        if((bitmap & BluetoothGattCharacteristic.PROPERTY_WRITE) == BluetoothGattCharacteristic.PROPERTY_WRITE){Log.d(TAG,"characteristic include: PROPERTY_WRITE");}
-        if((bitmap & BluetoothGattCharacteristic.PROPERTY_NOTIFY) == BluetoothGattCharacteristic.PROPERTY_NOTIFY){Log.d(TAG,"characteristic include: PROPERTY_NOTIFY");}
-
     }
 }
