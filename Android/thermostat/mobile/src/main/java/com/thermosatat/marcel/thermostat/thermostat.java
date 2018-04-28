@@ -25,6 +25,7 @@ import android.view.View;
 import android.widget.Button;
 
 import android.bluetooth.BluetoothGattCallback;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 
@@ -55,10 +56,12 @@ public class thermostat extends AppCompatActivity {
     private Handler mHandler;                           // handler for stop scanning after time delay
     private Button button_start;                        // button object to start scan
     private TextView response_text;                     // textview object to print receive msg
+    private ImageView zeiger_view;
     private ScanCallback mScanCallback;
     private boolean mConnected;                         // flag if device connected
     private BluetoothGatt mGatt;
     private boolean mEchoInitialized;
+    private float actual_temperatur;
 
 
 
@@ -72,10 +75,12 @@ public class thermostat extends AppCompatActivity {
 
         button_start = (Button)findViewById(R.id.button_start);
         response_text = (TextView)findViewById(R.id.response_text);
+        zeiger_view   = (ImageView)findViewById(R.id.zeiger);
 
         // create a bluetooth adapter object for work with the bluetooth device
         BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
+        actual_temperatur = 0;
 
         /* action button "now" */
         button_start.setOnClickListener(new View.OnClickListener(){
@@ -306,7 +311,20 @@ public class thermostat extends AppCompatActivity {
             super.onCharacteristicChanged(gatt, characteristic);
             Log.d(TAG,"Characteristic changed, " + characteristic.getUuid().toString());
             String receive_msg = readCharacteristic(characteristic);
-            response_text.setText(receive_msg);
+            actual_temperatur = Float.parseFloat(receive_msg);
+            float zeiger_winkel = 0;
+            if(actual_temperatur < 0 ){
+                zeiger_winkel = -135;
+            }
+            else if(actual_temperatur > 120){
+                zeiger_winkel = 135;
+            }
+            else {
+                zeiger_winkel = (270 / 120 * actual_temperatur) - 135;
+            }
+            zeiger_view.setRotation(zeiger_winkel);
+            response_text.setText(receive_msg + " - " + Float.toString(zeiger_winkel));
+
         }
     }
 

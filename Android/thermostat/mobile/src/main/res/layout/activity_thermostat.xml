@@ -44,7 +44,7 @@
                     app:srcCompat="@drawable/kalla" />
 
                 <ImageView
-                    android:id="@+id/imageView2"
+                    android:id="@+id/zeiger"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:srcCompat="@drawable/zeiger" />
