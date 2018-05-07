@@ -36,6 +36,8 @@ const int readPin = 32; // Use GPIO number. See ESP32 board pinouts
 #define CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
 #define CHARACTERISTIC_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
+static int tookup_temperature[2][2]= {{528,  3250},{19,  99  }};
+static int calc_temperatur(int AD_value);
 
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
@@ -104,7 +106,7 @@ void setup() {
 void loop() {
   if (deviceConnected) {
     // Fabricate some arbitrary junk for now...
-    txValue = analogRead(readPin) / 3.456; // This could be an actual sensor reading!
+    txValue = calc_temperatur(analogRead(readPin)); // read AD-Value and convert in °C
 
     // Let's convert the value to a char array:
     char txString[8]; // make sure this is big enuffz
@@ -125,3 +127,13 @@ void loop() {
   }
   delay(1000);
 }
+
+int calc_temperatur(int AD_value)
+{
+  float m = (float)(tookup_temperature[2][2]-tookup_temperature[2][1])/(float)(tookup_temperature[1][2]-tookup_temperature[1][1]);
+  float t = (float)(tookup_temperature[2][2]) - m * (float)(tookup_temperature[1][2]);
+
+  return (int)(m * (float)AD_value + t + 0.5f);
+}
+
+
