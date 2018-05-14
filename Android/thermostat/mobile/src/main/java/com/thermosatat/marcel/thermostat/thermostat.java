@@ -323,7 +323,7 @@ public class thermostat extends AppCompatActivity {
                 zeiger_winkel = (270 / 120 * actual_temperatur) - 135;
             }
             zeiger_view.setRotation(zeiger_winkel);
-            response_text.setText(receive_msg + " - " + Float.toString(zeiger_winkel));
+            response_text.setText(receive_msg + " °C ");
 
         }
     }

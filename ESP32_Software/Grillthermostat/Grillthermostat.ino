@@ -29,6 +29,8 @@ bool deviceConnected = false;
 float txValue = 0;
 const int readPin = 32; // Use GPIO number. See ESP32 board pinouts
 
+#define LED_BUILTIN 2
+
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
@@ -77,6 +79,8 @@ void setup() {
   BLEServer *pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
 
+  pinMode(LED_BUILTIN, OUTPUT); // configure onborad LED
+
   // Create the BLE Service
   BLEService *pService = pServer->createService(SERVICE_UUID);
 
@@ -103,7 +107,7 @@ void setup() {
   Serial.println("Waiting a client connection to notify...");
 }
 
-void loop() {
+void loop() { 
   if (deviceConnected) {
     // Fabricate some arbitrary junk for now...
     txValue = calc_temperatur(analogRead(readPin)); // read AD-Value and convert in °C
@@ -120,19 +124,19 @@ void loop() {
     Serial.print("*** Sent Value of Pin: ");
     Serial.print(txString);
     Serial.println(" ***");
+    digitalWrite(LED_BUILTIN, HIGH);  // activate onboard LED
   }
   else
   {
-    //Serial.println(" no device connected! ");
+    digitalWrite(LED_BUILTIN, LOW);  // deactivate onboard LED
   }
   delay(1000);
 }
 
 int calc_temperatur(int AD_value)
 {
-  float m = (float)(tookup_temperature[2][2]-tookup_temperature[2][1])/(float)(tookup_temperature[1][2]-tookup_temperature[1][1]);
-  float t = (float)(tookup_temperature[2][2]) - m * (float)(tookup_temperature[1][2]);
-
+  float m = (float)(tookup_temperature[1][1]-tookup_temperature[1][0])/(float)(tookup_temperature[0][1]-tookup_temperature[0][0]);
+  float t = (float)(tookup_temperature[1][1]) - m * (float)(tookup_temperature[0][1]);
   return (int)(m * (float)AD_value + t + 0.5f);
 }
 

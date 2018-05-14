@@ -22,14 +22,113 @@
             <FrameLayout
                 android:layout_width="fill_parent"
                 android:layout_height="0dip"
-                android:layout_weight="1">>
+                android:layout_weight="1.3">>
 
-                <TextView
-                    android:id="@+id/response_text"
-                    android:layout_width="fill_parent"
-                    android:layout_height="fill_parent"
-                    android:textSize="14pt"
-                    android:text="response"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:layout_width="0dip"
+                        android:layout_height="fill_parent"
+                        android:layout_weight="1">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="fill_parent"
+                                android:layout_height="0dip"
+                                android:layout_weight="3">
+
+                                <ImageView
+                                    android:id="@+id/imageView6"
+                                    android:layout_width="fill_parent"
+                                    android:layout_height="fill_parent"
+                                    app:srcCompat="@drawable/start" />
+                            </FrameLayout>
+
+                            <FrameLayout
+                                android:layout_width="fill_parent"
+                                android:layout_height="0dip"
+                                android:layout_weight="2">
+
+                            </FrameLayout>
+                        </LinearLayout>
+                    </FrameLayout>
+                    <FrameLayout
+                        android:layout_width="0dip"
+                        android:layout_height="fill_parent"
+                        android:layout_weight="1">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="fill_parent"
+                                android:layout_height="0dip"
+                                android:layout_weight="3">
+
+                                <ImageView
+                                    android:id="@+id/imageView7"
+                                    android:layout_width="fill_parent"
+                                    android:layout_height="fill_parent"
+                                    app:srcCompat="@drawable/lam" />
+                            </FrameLayout>
+
+                            <FrameLayout
+                                android:layout_width="fill_parent"
+                                android:layout_height="0dip"
+                                android:layout_weight="2">
+
+                                <TextView
+                                    android:id="@+id/response_text"
+                                    android:layout_width="fill_parent"
+                                    android:layout_height="fill_parent"
+                                    android:gravity="center"
+                                    android:text="response"
+                                    android:textSize="14pt" />
+                            </FrameLayout>
+                        </LinearLayout>
+
+
+                    </FrameLayout>
+                    <FrameLayout
+                        android:layout_width="0dip"
+                        android:layout_height="fill_parent"
+                        android:layout_weight="1">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="fill_parent"
+                                android:layout_height="0dip"
+                                android:layout_weight="3">
+
+                                <ImageView
+                                    android:id="@+id/imageView8"
+                                    android:layout_width="fill_parent"
+                                    android:layout_height="fill_parent"
+                                    app:srcCompat="@drawable/ziel" />
+                            </FrameLayout>
+
+                            <FrameLayout
+                                android:layout_width="fill_parent"
+                                android:layout_height="0dip"
+                                android:layout_weight="2">
+                            </FrameLayout>
+                        </LinearLayout>
+
+
+                    </FrameLayout>
+                </LinearLayout>
+
             </FrameLayout>
 
             <FrameLayout
@@ -53,7 +152,7 @@
             <FrameLayout
                 android:layout_width="fill_parent"
                 android:layout_height="0dip"
-                android:layout_weight="1">
+                android:layout_weight="0.7">
 
                 <Button
                     android:id="@+id/button_start"
